@@ -19,6 +19,7 @@ var (
 	PageSize int
 	JwtSecret string
 
+	DBType string
 	URI string
 )
 
@@ -32,7 +33,7 @@ func init() {
 	LoadBase()
 	LoadServer()
 	LoadApp()
-	GetURI()
+	LoadDB()
 }
 
 func LoadBase() {
@@ -60,10 +61,15 @@ func LoadApp() {
 	PageSize = sec.Key("PAGE_SIZE").MustInt(10)
 }
 
-func GetURI() {
-	sec, err := Cfg.GetSection("Mongodb")
+func LoadDB() {
+	sec, err := Cfg.GetSection("database")
 	if err != nil {
-		log.Fatalf("Fail to get section 'app': %v", err)
+		log.Fatalf("Fail to get section 'database': %v", err)
 	}
-	URI = sec.Key("URI").MustString("")
+	DBType = sec.Key("TYPE").MustString("mysql")
+	username := sec.Key("USER").MustString("")
+	password := sec.Key("PASSWORD").MustString("")
+	host := sec.Key("HOST").MustString("")
+	name := sec.Key("NAME").MustString("")
+	URI = username + ":" + password + "@tcp(" + host + ")/" + name
 }

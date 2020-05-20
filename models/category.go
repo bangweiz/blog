@@ -1,54 +1,75 @@
 package models
 
 import (
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"database/sql"
 	"time"
 )
 
 type Category struct {
-	CreateOn primitive.Timestamp `bson:"created_on,omitempty"`
-	ModifiedOn primitive.Timestamp `bson:"modified_on,omitempty"`
-	Title string `json:"title,omitempty"`
+	BaseModel
+	Title string `json:"title"`
 }
 
 func NewCategory(title string) (ok bool, res *Category) {
-	cursor, err := DB.CategoriesCollection.Find(CTX, bson.M{"title": title});
-	if err != nil || cursor.Next(CTX) {
-		return
-	}
-	category := Category{
-		CreateOn: primitive.Timestamp{T:uint32(time.Now().Unix())},
-		ModifiedOn: primitive.Timestamp{T:uint32(time.Now().Unix())},
-		Title: title,
-	}
-	_, err = DB.CategoriesCollection.InsertOne(CTX, category)
+	var id int
+	queryString := "SELECT * FROM categories WHERE title = ?"
+	err := DB.QueryRow(queryString, title).Scan(&id)
 	if err != nil {
-		return false, &Category{}
+		if err != sql.ErrNoRows {
+			return false, &Category{}
+		}
+		queryString = "INSERT INTO categories (title, created_on, modified_on) VALUES (?, ?, ?)"
+		res, err := DB.Exec(queryString, title, time.Now(), time.Now())
+		if err != nil {
+			return false, &Category{}
+		}
+		id, err := res.LastInsertId()
+		if err != nil {
+			return false, &Category{}
+		}
+		c := &Category{
+			BaseModel{
+				ID: int(id),
+			},
+			title,
+		}
+		return true, c
 	}
-	return true, &category
+	return false, &Category{}
 }
 
 func DeleteCategory(id string) bool {
-	primitiveID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return false
-	}
-	_, err = DB.CategoriesCollection.DeleteOne(CTX, bson.M{"_id": primitiveID})
+	queryString := "DELETE FROM categories WHERE id = ?"
+	_, err := DB.Exec(queryString, id)
 	if err != nil {
 		return false
 	}
 	return true
 }
 
-func FetchCategories() []Category {
-	var categories []Category
-	cursor, err := DB.CategoriesCollection.Find(CTX, bson.M{})
+func FetchCategories() []*Category {
+	queryString := "SELECT * FROM categories"
+	rows, err := DB.Query(queryString)
 	if err != nil {
-		return categories
+		return nil
 	}
-	if err = cursor.All(CTX, &categories); err != nil {
-		return categories
+	categories := make([]*Category, 0)
+	for rows.Next() {
+		var id int
+		var createdOn, modifiedOn, title string
+		err = rows.Scan(&id, &createdOn, &modifiedOn, &title)
+		if err != nil {
+			return nil
+		}
+		category := &Category{
+			BaseModel{
+				id,
+				createdOn,
+				modifiedOn,
+			},
+			title,
+		}
+		categories = append(categories, category)
 	}
 	return categories
 }

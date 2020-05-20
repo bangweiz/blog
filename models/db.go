@@ -1,51 +1,28 @@
 package models
 
 import (
-	"context"
-	"log"
-	"time"
-
+	"database/sql"
 	"github.com/bangweiz/blog/pkg"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	_ "github.com/go-sql-driver/mysql"
+	"log"
 )
 
 var (
-	DB *Database
-	CTX context.Context
+	DB *sql.DB
 )
 
-type Database struct {
-	Client *mongo.Client
-	DB *mongo.Database
-	UsersCollection *mongo.Collection
-	CategoriesCollection *mongo.Collection
-	PostsCollection *mongo.Collection
+type BaseModel struct {
+	ID int `json:"id"`
+	CreateOn string `json:"created_on"`
+	ModifiedOn string `json:"modified_on"`
 }
 
-
 func init() {
-	clientOptions := options.Client().ApplyURI(pkg.URI)
-	clientOptions.SetMaxPoolSize(50)
-
-	CTX, _ := context.WithTimeout(context.Background(), 10 * time.Second)
-	client, err := mongo.Connect(CTX, clientOptions)
+	db, err := sql.Open("mysql", pkg.URI)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalf("cannot connect to database due to err: %v", err)
 	}
-
-	//defer client.Disconnect(CTX)
-
-	database := client.Database("blog")
-	usersCollection := database.Collection("users")
-	categoriesCollection := database.Collection("categories")
-	postsCollection := database.Collection("posts")
-
-	DB = &Database{
-		Client: client,
-		DB: database,
-		UsersCollection: usersCollection,
-		CategoriesCollection: categoriesCollection,
-		PostsCollection: postsCollection,
-	}
+	db.SetMaxOpenConns(10)
+	db.SetMaxIdleConns(5)
+	DB = db
 }
