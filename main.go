@@ -9,7 +9,6 @@ import (
 )
 
 func main() {
-	//models.Connect()
 
 	router := routers.InitRouter()
 

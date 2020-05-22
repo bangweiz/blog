@@ -10,14 +10,19 @@ type Category struct {
 	Api string
 }
 
+type category struct {
+	Title string `json:"title"`
+}
+
 func (*Category) AddCategory(c *gin.Context) {
-	title := c.PostForm("title")
+	var category category
+	_ = c.BindJSON(&category)
 	err := make(map[string]string, 1)
-	if title == "" {
+	if category.Title == "" {
 		err["title"] = "Title field is required"
 		c.JSON(http.StatusBadRequest, gin.H{ "data": err })
 	} else {
-		ok, res := models.NewCategory(title)
+		ok, res := models.NewCategory(category.Title)
 		if ok {
 			c.JSON(http.StatusOK, gin.H{ "data": res })
 		} else {

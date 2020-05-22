@@ -57,7 +57,7 @@ func FetchCategories() []*Category {
 	for rows.Next() {
 		var id int
 		var createdOn, modifiedOn, title string
-		err = rows.Scan(&id, &createdOn, &modifiedOn, &title)
+		err = rows.Scan(&id, &title, &createdOn, &modifiedOn)
 		if err != nil {
 			return nil
 		}

@@ -12,6 +12,11 @@ type User struct {
 	Api string
 }
 
+type loginCommand struct {
+	Email string `json:"email"`
+	Password string `json:"password"`
+}
+
 func (*User) UserRegister(c *gin.Context) {
 	username := c.PostForm("username")
 	email := c.PostForm("email")
@@ -34,15 +39,15 @@ func (*User) UserRegister(c *gin.Context) {
 }
 
 func (*User) UserLogin(c *gin.Context) {
-	email := c.PostForm("email")
-	pwd := c.PostForm("password")
-	err := util.ValidateUserLogin(email, pwd)
+	var loginCmd loginCommand
+	_ = c.BindJSON(&loginCmd)
+	err := util.ValidateUserLogin(loginCmd.Email, loginCmd.Password)
 	if len(err) != 0 {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"data": err,
 		})
 	} else {
-		ok, user := models.FindUser(email, pwd)
+		ok, user := models.FindUser(loginCmd.Email, loginCmd.Password)
 		if ok {
 			token, errors := util.GenerateToken(user.Username, user.Password, user.Email)
 			if errors != nil {

@@ -50,6 +50,7 @@ func InitRouter() *gin.Engine {
 	postRouter := r.Group(postApi.Api)
 	{
 		postRouter.GET("all", postApi.FetchPosts)
+		postRouter.GET("/detail/:id", postApi.FetchPost)
 	}
 	postRouter.Use(middleware.JWT())
 	{
